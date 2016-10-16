@@ -449,7 +449,7 @@ def evaluation_loop(master,
                                   summary_op_feed_dict=summary_op_feed_dict,
                                   summary_writer=summary_writer,
                                   global_step=global_step)
-
+      logging.info('metric has value %f', final_op_value)
     logging.info('Finished evaluation at ' + time.strftime('%Y-%m-%d-%H:%M:%S',
                                                            time.gmtime()))
     number_of_evaluations += 1
