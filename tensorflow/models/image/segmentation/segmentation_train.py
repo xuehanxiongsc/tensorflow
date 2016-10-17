@@ -69,6 +69,7 @@ def train():
         
         # create a global step variable
         global_step = variables.get_or_create_global_step()
+        tf.Print(global_step,[global_step])
         # Decay the learning rate exponentially based on the number of steps.
         lr = tf.train.exponential_decay(FLAGS.initial_learning_rate,
                                     global_step,

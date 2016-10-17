@@ -97,7 +97,7 @@ def loss_and_accuracy(logits, labels):
     labels = tf.cast(labels, tf.int32)
     cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(predictions, labels)
     cross_entropy_mean = tf.reduce_mean(cross_entropy, name='cross_entropy')
-    tf.add_to_collection('losses', cross_entropy_mean)
+    slim.losses.add_loss(cross_entropy_mean)
     
     _,indices = tf.nn.top_k(predictions, k=1, sorted=False)
     squeezed_indices = tf.squeeze(indices)
@@ -105,7 +105,7 @@ def loss_and_accuracy(logits, labels):
     tf.scalar_summary('accuracy', acc)
     # The total loss is defined as the cross entropy loss plus all of the weight
     # decay terms (L2 loss).
-    return tf.add_n(tf.get_collection('losses'), name='total_loss'),acc
+    return slim.losses.get_total_loss(),acc
 
 
 # In[ ]:
