@@ -38,7 +38,9 @@ tf.app.flags.DEFINE_string('train_dir', '/tmp/segmentation_train/',
 tf.app.flags.DEFINE_float('initial_learning_rate', 0.1,
                             """Initial learning rate.""")
 tf.app.flags.DEFINE_float('learning_rate_decay_factor', 0.1,
-                            """Learning rate decat factor.""")
+                            """Learning rate decay factor.""")
+tf.app.flags.DEFINE_float('weight_decay', 0.00001,
+                            """Weight decay factor.""")
 tf.app.flags.DEFINE_integer('decay_steps', 2000,
                             """Number of steps per learning rate decay.""")
 tf.app.flags.DEFINE_integer('max_steps', 1000,
@@ -62,7 +64,7 @@ def train():
 
         # Build a Graph that computes the logits predictions from the
         # inference model.
-        logits = segmentation_model.inference(images)
+        logits = segmentation_model.inference(images,FLAGS.weight_decay)
 
         # Calculate loss.
         loss,acc = segmentation_model.loss_and_accuracy(logits, labels)
@@ -80,7 +82,7 @@ def train():
         tf.scalar_summary('learning_rate',lr)
         # updates the model parameters.
         # opt = tf.train.AdamOptimizer(INITIAL_LEARNING_RATE)
-        opt = tf.train.MomentumOptimizer(lr,MOMENTUM)
+        opt = tf.train.MomentumOptimizer(lr,MOMENTUM,use_nesterov=True)
         train_op = slim.learning.create_train_op(loss, optimizer=opt)    
         slim.learning.train(train_op,FLAGS.train_dir,
                            log_every_n_steps=10,

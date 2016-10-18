@@ -44,7 +44,7 @@ def evaluate():
 
         # Build a Graph that computes the logits predictions from the
         # inference model.
-        logits = segmentation_model.inference(images)
+        logits = segmentation_model.inference(images,0.0)
         logits_shape = logits.get_shape().as_list()
         label_shape = labels.get_shape().as_list()
         height = label_shape[1]

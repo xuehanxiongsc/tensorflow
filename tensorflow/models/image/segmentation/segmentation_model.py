@@ -26,7 +26,7 @@ def data_type():
     else:
         return tf.float32
 
-def inference(images):
+def inference(images,weight_decay):
     """Build a segmentation model.
     Args:
         images: Images returned from distorted_inputs() or inputs().
@@ -51,7 +51,7 @@ def inference(images):
 
     with slim.arg_scope([slim.conv2d], padding='SAME',
                         weights_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                        weights_regularizer=slim.l2_regularizer(WEIGHT_DECAY),
+                        weights_regularizer=slim.l2_regularizer(weight_decay),
                         normalizer_fn=slim.batch_norm, # apply batchnorm after each conv layer
                         normalizer_params=batch_norm_params):
         
