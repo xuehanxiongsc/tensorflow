@@ -86,6 +86,7 @@ def train():
         train_op = slim.learning.create_train_op(loss, optimizer=opt)    
         slim.learning.train(train_op,FLAGS.train_dir,
                            log_every_n_steps=10,
+                           save_interval_secs=FLAGS.save_interval_secs,
                            number_of_steps=FLAGS.max_steps)
 
 

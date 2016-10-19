@@ -71,7 +71,7 @@ def inference(images,weight_decay):
         net = slim.conv2d(net, 4, [1, 1], scope='fc')
     
     net = slim.conv2d_transpose(net, 4, [16, 16], 8, 
-                                weights_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                                weights_initializer=tf.contrib.layers.xavier_initializer(uniform=False),
                                 biases_initializer=None,
                                 activation_fn=None,
                                 padding='VALID',
@@ -93,7 +93,7 @@ def loss_and_accuracy(logits, labels):
     height = label_shape[1]
     width  = label_shape[2]
     num_classes = logits_shape[3]
-    predictions = tf.slice(logits,[0,8,8,0],[label_shape[0],height,width,num_classes],name='crop')
+    predictions = tf.slice(logits,[0,4,4,0],[label_shape[0],height,width,num_classes],name='crop')
     labels = tf.cast(labels, tf.int32)
     cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(predictions, labels)
     cross_entropy_mean = tf.reduce_mean(cross_entropy, name='cross_entropy')

@@ -50,7 +50,7 @@ def evaluate():
         height = label_shape[1]
         width  = label_shape[2]
         num_classes = logits_shape[3]
-        predictions = tf.slice(logits,[0,8,8,0],[label_shape[0],height,width,num_classes],name='crop')
+        predictions = tf.slice(logits,[0,4,4,0],[label_shape[0],height,width,num_classes],name='crop')
         
         _,predicted_labels = tf.nn.top_k(predictions, k=1, sorted=False)
         predicted_labels = tf.squeeze(predicted_labels)
