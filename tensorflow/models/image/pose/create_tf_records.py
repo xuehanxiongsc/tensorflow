@@ -95,7 +95,7 @@ def _resize(image,centers,scales,joints):
     
 
 
-# In[34]:
+# In[5]:
 
 
 index = 820
@@ -108,7 +108,7 @@ objpos = data[index]['objpos']
 objpos_others = data[index]['objpos_other']
 centers = _concat_objpos(objpos,objpos_others,nop)
 print centers
-
+print data[index]['isValidation']
 scale = data[index]['scale_provided']
 scale_others = data[index]['scale_provided_other']
 scales = _concat_scale(scale,scale_others,nop)
@@ -116,8 +116,6 @@ scales = _concat_scale(scale,scale_others,nop)
 joint_others = data[index]['joint_others']
 joint_self = data[index]['joint_self']
 joints = _concat_joints(joint_self,joint_others,nop)
-
-print mask
 
 joints_others_array = np.asarray(joint_others)
 for i in xrange(joints_others_array.shape[0]):
@@ -161,15 +159,19 @@ def _preprocess(data,image,index):
     return nop,resized_image,resized_centers,resized_scales,resized_joints
 
 def convert_to(data, is_train, name):
-    num_examples = 1000#len(data)
+    num_examples = len(data)
     print('Total of %d images' % num_examples)
     output = os.path.join(DIRECTORY, name + '.tfrecords')
     print('Writing', output)
     writer = tf.python_io.TFRecordWriter(output)
-    
     random_order = np.random.permutation(num_examples).tolist()
+    count = 0
     for index in random_order:
         # read image
+        if data[index]['isValidation'] != 0 and is_train:
+            continue
+        if data[index]['isValidation'] == 0 and (not is_train):
+            continue
         image_path = os.path.join(IMAGE_DIRECTORY,data[index]['img_paths'])
         image = cv2.imread(image_path)
         nop,resized_image,resized_centers,resized_scales,resized_joints = _preprocess(data,image,index)
@@ -190,12 +192,14 @@ def convert_to(data, is_train, name):
         'joints':     _float_feature(resized_joints.flatten()),
         'image_raw':  _bytes_feature(image_raw)}))
         writer.write(example.SerializeToString())
+        count = count + 1
     writer.close()
+    print 'Total of %d image written' % count
 
 
 # In[7]:
 
-convert_to(data,True,'pose_small')
+convert_to(data,True,'MPI_train')
 
 
 

@@ -22,6 +22,8 @@ tf.app.flags.DEFINE_float('scale_max', 1.3,
                           """Maximum upscale perturbation.""")
 tf.app.flags.DEFINE_float('scale_abs', 1.171,
                           """Absolute scale.""")
+tf.app.flags.DEFINE_float('sigma', 16.0,
+                          """Sigma for joint heatmap.""")
 
 
 # In[3]:
@@ -42,14 +44,12 @@ LEFT_WRIST=11
 NECK=12
 HEAD_TOP=13
 
-OUTSIDE_IMAGE = 2.0
 IMAGE_SIZE = 368
 IMAGE_SIZE_HALF = IMAGE_SIZE/2
 NUM_MPI_JOINTS = 16
 NUM_COMMON_JOINTS = 14
 NUM_HEATMAPS = NUM_COMMON_JOINTS+1
-SIGMA = 16
-NORMALIZER = 1.0/(2*SIGMA*SIGMA)
+NORMALIZER = 1.0/(2*FLAGS.sigma*FLAGS.sigma)
 TRANSLATION_PERTURB = 10
 IMAGE_SIZE_WITH_PADDING = IMAGE_SIZE + 2*TRANSLATION_PERTURB
 
@@ -123,6 +123,7 @@ def _add_visible_joint_heatmap(heatmap, joint):
     return D
 
 def _add_joint_heatmap(heatmap, joint, vis):
+    # the joints is outside image if vis < 0
     return tf.cond(vis >= 0.0,
                    lambda: _add_visible_joint_heatmap(heatmap, joint),
                    lambda: _add_invisible_joint_heatmap(heatmap, joint))
@@ -215,6 +216,8 @@ def distorted_inputs(filenames,batch_size,total_inputs):
     image,height,width,nop,scales,centers,joints = read_and_decode(filename_queue)
     # separate joint locations and their visibility
     joints_loc = tf.slice(joints,[0,0],[NUM_MPI_JOINTS*nop,2])
+    # convert matlab coordinate system to 0-based
+    joints_loc -= 1.0
     joints_vis = tf.slice(joints,[0,2],[NUM_MPI_JOINTS*nop,1])
     joints_vis = tf.squeeze(joints_vis)
     

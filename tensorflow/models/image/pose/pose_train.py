@@ -4,6 +4,8 @@
 # In[1]:
 
 import tensorflow as tf
+import math
+import numpy as np
 import os
 from datetime import datetime
 import time
@@ -19,7 +21,6 @@ slim = tf.contrib.slim
 # In[ ]:
 
 NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 900
-NUM_EPOCHS_PER_DECAY = 10
 INITIAL_LEARNING_RATE = 1.0E-1
 LEARNING_RATE_DECAY_FACTOR = 0.1
 MOVING_AVERAGE_DECAY = 0.9
@@ -37,9 +38,9 @@ tf.app.flags.DEFINE_float('learning_rate_decay_factor', 0.1,
                             """Learning rate decay factor.""")
 tf.app.flags.DEFINE_float('weight_decay', 0.00001,
                             """Weight decay factor.""")
-tf.app.flags.DEFINE_integer('decay_steps', 2000,
-                            """Number of steps per learning rate decay.""")
-tf.app.flags.DEFINE_integer('max_steps', 1000,
+tf.app.flags.DEFINE_integer('decay_epochs', 10,
+                            """Number of epoches per learning rate decay.""")
+tf.app.flags.DEFINE_integer('max_epochs', 100,
                             """Number of batches to run.""")
 tf.app.flags.DEFINE_integer('batch_size', 64,
                             """Batch size.""")
@@ -47,6 +48,9 @@ tf.app.flags.DEFINE_integer('save_interval_secs', 600,
                             """Time interval to save checkpoints.""")
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
+steps_per_epoch = int(math.ceil(float(NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN)/float(FLAGS.batch_size)))
+decay_steps = FLAGS.decay_epochs*steps_per_epoch
+max_steps = max_epochs*iterations_per_epoch
 
 
 # In[ ]:
@@ -70,10 +74,9 @@ def train():
         # Decay the learning rate exponentially based on the number of steps.
         lr = tf.train.exponential_decay(FLAGS.initial_learning_rate,
                                     global_step,
-                                    FLAGS.decay_steps,
+                                    decay_steps,
                                     FLAGS.learning_rate_decay_factor,
                                     staircase=True)
-        
         tf.scalar_summary('learning_rate',lr)
         # updates the model parameters.
         opt = tf.train.MomentumOptimizer(lr,MOMENTUM,use_nesterov=True)
@@ -81,7 +84,7 @@ def train():
         slim.learning.train(train_op,FLAGS.train_dir,
                            log_every_n_steps=1,
                            save_interval_secs=FLAGS.save_interval_secs,
-                           number_of_steps=FLAGS.max_steps)
+                           number_of_steps=max_steps)
         
 def main(unused_args):
     if tf.gfile.Exists(FLAGS.train_dir):
