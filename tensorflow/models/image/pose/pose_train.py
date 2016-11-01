@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 import time
 import numpy as np
-import pose_input
+#import pose_input
 import pose_model
 from tensorflow.contrib.framework.python.ops import variables
 from tensorflow.python.platform import tf_logging as logging
@@ -18,7 +18,7 @@ from six.moves import xrange
 slim = tf.contrib.slim
 
 
-# In[ ]:
+# In[2]:
 
 NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 900
 INITIAL_LEARNING_RATE = 1.0E-1
@@ -50,7 +50,7 @@ tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
 steps_per_epoch = int(math.ceil(float(NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN)/float(FLAGS.batch_size)))
 decay_steps = FLAGS.decay_epochs*steps_per_epoch
-max_steps = max_epochs*iterations_per_epoch
+max_steps = FLAGS.max_epochs*steps_per_epoch
 
 
 # In[ ]:

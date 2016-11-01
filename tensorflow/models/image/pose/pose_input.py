@@ -14,16 +14,19 @@ import cv2
 
 # In[2]:
 
-FLAGS = tf.app.flags.FLAGS
+SCALE_MIN = 0.7
+SCALE_MAX = 1.3
+SCALE_ABS = 1.171
+SIGMA = 16.0
 
-tf.app.flags.DEFINE_float('scale_min', 0.7,
-                          """Maximum downscale perturbation.""")
-tf.app.flags.DEFINE_float('scale_max', 1.3,
-                          """Maximum upscale perturbation.""")
-tf.app.flags.DEFINE_float('scale_abs', 1.171,
-                          """Absolute scale.""")
-tf.app.flags.DEFINE_float('sigma', 16.0,
-                          """Sigma for joint heatmap.""")
+# tf.app.flags.DEFINE_float('scale_min', 0.7,
+#                           """Maximum downscale perturbation.""")
+# tf.app.flags.DEFINE_float('scale_max', 1.3,
+#                           """Maximum upscale perturbation.""")
+# tf.app.flags.DEFINE_float('scale_abs', 1.171,
+#                           """Absolute scale.""")
+# tf.app.flags.DEFINE_float('sigma', 16.0,
+#                           """Sigma for joint heatmap.""")
 
 
 # In[3]:
@@ -49,7 +52,7 @@ IMAGE_SIZE_HALF = IMAGE_SIZE/2
 NUM_MPI_JOINTS = 16
 NUM_COMMON_JOINTS = 14
 NUM_HEATMAPS = NUM_COMMON_JOINTS+1
-NORMALIZER = 1.0/(2*FLAGS.sigma*FLAGS.sigma)
+NORMALIZER = 1.0/(2*SIGMA*SIGMA)
 TRANSLATION_PERTURB = 10
 IMAGE_SIZE_WITH_PADDING = IMAGE_SIZE + 2*TRANSLATION_PERTURB
 
@@ -88,10 +91,10 @@ def _reorder_joints(joints):
 
 def _random_resize(image,joints,center,scale):
     
-    scale_abs = FLAGS.scale_abs/scale
-    scale_mul = tf.random_uniform([1], minval=FLAGS.scale_min, 
-                                  maxval=FLAGS.scale_max)
-    scale_rnd = scale_mul[0] * scale_abs
+    scale_abs = SCALE_ABS/scale
+    scale_mul = tf.random_uniform([1], minval=SCALE_MIN, 
+                                  maxval=SCALE_MAX)
+    scale_rnd = scale_mul[0] * SCALE_ABS
     resized_joints = tf.scalar_mul(scale_rnd,joints)
     resized_center = tf.scalar_mul(scale_rnd,center)
     new_width  = tf.cast(tf.cast(tf.shape(image)[1],tf.float32)*scale_rnd,tf.int32)
