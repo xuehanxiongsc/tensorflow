@@ -7,9 +7,9 @@ import tensorflow as tf
 import os
 import numpy as np
 import cv2
-# %matplotlib inline
+get_ipython().magic(u'matplotlib inline')
 
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 
 # In[2]:
@@ -17,7 +17,7 @@ import cv2
 SCALE_MIN = 0.7
 SCALE_MAX = 1.3
 SCALE_ABS = 1.171
-SIGMA = 16.0
+SIGMA = 7.0
 
 # tf.app.flags.DEFINE_float('scale_min', 0.7,
 #                           """Maximum downscale perturbation.""")
@@ -29,7 +29,7 @@ SIGMA = 16.0
 #                           """Sigma for joint heatmap.""")
 
 
-# In[3]:
+# In[33]:
 
 # joint configuration
 RIGHT_ANKLE=0
@@ -94,7 +94,7 @@ def _random_resize(image,joints,center,scale):
     scale_abs = SCALE_ABS/scale
     scale_mul = tf.random_uniform([1], minval=SCALE_MIN, 
                                   maxval=SCALE_MAX)
-    scale_rnd = scale_mul[0] * SCALE_ABS
+    scale_rnd = scale_mul[0] * scale_abs
     resized_joints = tf.scalar_mul(scale_rnd,joints)
     resized_center = tf.scalar_mul(scale_rnd,center)
     new_width  = tf.cast(tf.cast(tf.shape(image)[1],tf.float32)*scale_rnd,tf.int32)
@@ -241,7 +241,7 @@ def distorted_inputs(filenames,batch_size,total_inputs):
     # Randomly flip the image horizontally.
     distorted_image_label = tf.image.random_flip_left_right(distorted_image_label)
     distorted_image = tf.slice(distorted_image_label,[0,0,0],[IMAGE_SIZE,IMAGE_SIZE,3])
-    distorted_image = distorted_image * (1. / 255) - 0.5
+#     distorted_image = distorted_image * (1. / 255) - 0.5
     distorted_label = tf.slice(distorted_image_label,[0,0,3],[IMAGE_SIZE,IMAGE_SIZE,NUM_HEATMAPS*2])
     
     # Ensure that the random shuffling has good mixing properties.
@@ -310,10 +310,10 @@ def blend_heatmap_with_image(heatmaps,image,alpha=0.5):
     return output
 
 
-# In[4]:
+# In[34]:
 
 # DIRECTORY = '/Users/xuehan.xiong/Google Drive/datasets/human_pose'
-# TFRECORD_FILE = os.path.join(DIRECTORY, 'pose_small.tfrecords')
+# TFRECORD_FILE = os.path.join(DIRECTORY, 'MPI_train.tfrecords')
 
 # file_path = os.path.join(DIRECTORY,TFRECORD_FILE)
 # images,heatmaps = distorted_inputs([file_path],32,1000)
@@ -325,18 +325,17 @@ def blend_heatmap_with_image(heatmaps,image,alpha=0.5):
 # tf.train.start_queue_runners(sess=sess)
 
 
-# In[5]:
+# In[35]:
 
 # images_val,heatmaps_val = sess.run([images,heatmaps])
-# for i in xrange(images_val.shape[0]):
 
 
-# In[27]:
+# In[65]:
 
-# index = 15
+# index = 28
 # rgb = cv2.cvtColor(images_val[index,:,:,:], cv2.COLOR_BGR2RGB)
-# heatmap_self = heatmaps_val[index,:,:,14]
-# heatmap_all  = heatmaps_val[index,:,:,29]
+# heatmap_self = heatmaps_val[index,:,:,13]
+# heatmap_all  = heatmaps_val[index,:,:,28]
 # plt.subplot(131)
 # plt.imshow(np.uint8(rgb))
 # plt.subplot(132)
