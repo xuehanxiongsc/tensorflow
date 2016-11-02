@@ -65,7 +65,9 @@ def inference(images,weight_decay,reuse=None):
         net0 = slim.conv2d(net0, 128, [3, 3], rate=2, scope='conv11_stage0')
         net0 = slim.conv2d(net0, 128, [3, 3], rate=2, scope='conv12_stage0')
         net0 = slim.conv2d(net0, 128, [1, 1], scope='fc0_stage0')
-        net0 = slim.conv2d(net0, pose_input.NUM_HEATMAPS, [1, 1], scope='fc1_stage0')
+        net0 = slim.conv2d(net0, pose_input.NUM_HEATMAPS, [1, 1], 
+                           activation_fn=None,
+                           scope='fc1_stage0')
 
         net1 = slim.conv2d(images, 16, [3, 3], scope='conv0_stage1')
         net1 = slim.conv2d(net1, 16, [3, 3], scope='conv1_stage1')
@@ -92,7 +94,9 @@ def inference(images,weight_decay,reuse=None):
         net1 = slim.conv2d(net1, 128, [3, 3], rate=4, scope='conv14_stage1')
         net1 = slim.conv2d(net1, 128, [3, 3], rate=8, scope='conv15_stage1')
         net1 = slim.conv2d(net1, 128, [1, 1], scope='fc0_stage1')
-        net1 = slim.conv2d(net1, pose_input.NUM_HEATMAPS, [1, 1], scope='fc1_stage1')
+        net1 = slim.conv2d(net1, pose_input.NUM_HEATMAPS, [1, 1], 
+                           activation_fn=None,
+                           scope='fc1_stage1')
         
     return net0,net1
 
@@ -111,10 +115,8 @@ def loss(heatmaps_stage0, heatmaps_stage1, labels):
     # They are used for contextual stages of training
     resized_labels = tf.image.resize_images(labels,[LABEL_SIZE,LABEL_SIZE])
     labels1,labels0 = tf.split(3, 2, resized_labels)
-    error0 = slim.losses.mean_squared_error(heatmaps_stage0, labels0)
-    slim.losses.add_loss(error0)
-    error1 = slim.losses.mean_squared_error(heatmaps_stage1, labels1)
-    slim.losses.add_loss(error1)
+    slim.losses.mean_squared_error(heatmaps_stage0, labels0)
+    slim.losses.mean_squared_error(heatmaps_stage1, labels1)
     # The total loss is defined as the Euclidean loss plus all of the weight
     # decay terms (L2 loss).
     return slim.losses.get_total_loss()

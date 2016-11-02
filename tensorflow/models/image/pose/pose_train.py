@@ -46,6 +46,8 @@ tf.app.flags.DEFINE_integer('batch_size', 64,
                             """Batch size.""")
 tf.app.flags.DEFINE_integer('save_interval_secs', 600,
                             """Time interval to save checkpoints.""")
+tf.app.flags.DEFINE_integer('log_every_n_steps', 10,
+                            """Steps per logging.""")
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
 steps_per_epoch = int(math.ceil(float(NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN)/float(FLAGS.batch_size)))
@@ -82,7 +84,7 @@ def train():
         opt = tf.train.MomentumOptimizer(lr,MOMENTUM,use_nesterov=True)
         train_op = slim.learning.create_train_op(loss, optimizer=opt)    
         slim.learning.train(train_op,FLAGS.train_dir,
-                           log_every_n_steps=10,
+                           log_every_n_steps=FLAGS.log_every_n_steps,
                            save_interval_secs=FLAGS.save_interval_secs,
                            number_of_steps=max_steps)
         
