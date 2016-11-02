@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 import time
 import numpy as np
-#import pose_input
+import pose_input
 import pose_model
 from tensorflow.contrib.framework.python.ops import variables
 from tensorflow.python.platform import tf_logging as logging
@@ -20,7 +20,7 @@ slim = tf.contrib.slim
 
 # In[2]:
 
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 900
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 25307
 INITIAL_LEARNING_RATE = 1.0E-1
 LEARNING_RATE_DECAY_FACTOR = 0.1
 MOVING_AVERAGE_DECAY = 0.9
@@ -82,7 +82,7 @@ def train():
         opt = tf.train.MomentumOptimizer(lr,MOMENTUM,use_nesterov=True)
         train_op = slim.learning.create_train_op(loss, optimizer=opt)    
         slim.learning.train(train_op,FLAGS.train_dir,
-                           log_every_n_steps=1,
+                           log_every_n_steps=10,
                            save_interval_secs=FLAGS.save_interval_secs,
                            number_of_steps=max_steps)
         

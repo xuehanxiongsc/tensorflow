@@ -245,7 +245,7 @@ def distorted_inputs(filenames,batch_size,total_inputs):
     distorted_label = tf.slice(distorted_image_label,[0,0,3],[IMAGE_SIZE,IMAGE_SIZE,NUM_HEATMAPS*2])
     
     # Ensure that the random shuffling has good mixing properties.
-    min_fraction_of_examples_in_queue = 0.4
+    min_fraction_of_examples_in_queue = 0.05
     min_queue_examples = int(total_inputs *
                             min_fraction_of_examples_in_queue)
     print ('Filling queue with %d images before starting to train. '
