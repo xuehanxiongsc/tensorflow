@@ -1,18 +1,18 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[25]:
 
 import tensorflow as tf
 import os
 import numpy as np
 import cv2
-get_ipython().magic(u'matplotlib inline')
+# %matplotlib inline
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
-# In[2]:
+# In[26]:
 
 SCALE_MIN = 0.7
 SCALE_MAX = 1.3
@@ -29,7 +29,7 @@ SIGMA = 7.0
 #                           """Sigma for joint heatmap.""")
 
 
-# In[3]:
+# In[27]:
 
 # joint configuration
 RIGHT_ANKLE=0
@@ -310,7 +310,7 @@ def blend_heatmap_with_image(heatmaps,image,alpha=0.5):
     return output
 
 
-# In[4]:
+# In[28]:
 
 # DIRECTORY = '/Users/xuehan.xiong/Google Drive/datasets/human_pose'
 # TFRECORD_FILE = os.path.join(DIRECTORY, 'MPI_test.tfrecords')
@@ -325,22 +325,23 @@ def blend_heatmap_with_image(heatmaps,image,alpha=0.5):
 # tf.train.start_queue_runners(sess=sess)
 
 
-# In[5]:
+# In[29]:
 
 # images_val,heatmaps_val = sess.run([images,heatmaps])
 
 
-# In[24]:
+# In[44]:
 
 # print heatmaps_val[1,:,:,13]
 # plt.imshow(heatmaps_val[1,:,:,13],cmap='jet')
 # print np.amax(heatmaps_val[1,:,:,13])
-# index = 21
+# index = 11
 # gray_image = cv2.cvtColor(images_val[index,:,:,:], cv2.COLOR_BGR2GRAY)
-# print heatmaps_val.shape
-# print gray_image.shape
-# gray_blend = blend_heatmap_with_image(heatmaps_val[index,:,:,:],gray_image)
-# plt.imshow(gray_blend,cmap='gray')
+# #gray_blend = blend_heatmap_with_image(heatmaps_val[index,:,:,:],gray_image)
+# plt.subplot(121)
+# plt.imshow(gray_image,cmap='gray')
+# plt.subplot(122)
+# plt.imshow(heatmaps_val[index,:,:,29],cmap='jet')
 # plt.show()
 
 
