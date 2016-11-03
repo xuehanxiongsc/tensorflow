@@ -66,10 +66,10 @@ def train():
 
         # Build a Graph that computes the logits predictions from the
         # inference model.
-        heatmap0,heatmap1 = pose_model.inference(images,FLAGS.weight_decay)
+        heatmap0 = pose_model.inference(images,FLAGS.weight_decay)
 
         # Calculate loss.
-        loss = pose_model.loss(heatmap0, heatmap1, labels)
+        loss = pose_model.loss(heatmap0, labels)
         
         # create a global step variable
         global_step = variables.get_or_create_global_step()
