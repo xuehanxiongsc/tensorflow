@@ -9,6 +9,8 @@ import numpy as np
 import cv2
 import pose_input
 
+# %matplotlib inline
+# import matplotlib.pyplot as plt
 slim = tf.contrib.slim
 
 
@@ -97,10 +99,9 @@ def inference(images,weight_decay,reuse=None):
 #         net1 = slim.conv2d(net1, pose_input.NUM_HEATMAPS, [1, 1], 
 #                            activation_fn=None,
 #                            scope='fc1_stage1')
-        
     return net0
 
-def loss(heatmaps_stage0, heatmaps_stage1, labels):
+def loss(heatmaps_stage0, labels):
     """Add L2Loss to all the trainable variables.
     Add summary for "Loss" and "Loss/avg".
     Args:
@@ -115,7 +116,10 @@ def loss(heatmaps_stage0, heatmaps_stage1, labels):
     # They are used for contextual stages of training
     resized_labels = tf.image.resize_images(labels,[LABEL_SIZE,LABEL_SIZE])
     labels1,labels0 = tf.split(3, 2, resized_labels)
-    slim.losses.mean_squared_error(heatmaps_stage0, labels0)
+    loss0_tensor = tf.nn.sigmoid_cross_entropy_with_logits(heatmaps_stage0,labels0)
+    loss0 = tf.reduce_mean(loss0_tensor)
+    tf.contrib.losses.add_loss(loss0)
+#     slim.losses.mean_squared_error(heatmaps_stage0, labels0)
 #     slim.losses.mean_squared_error(heatmaps_stage1, labels1)
     # The total loss is defined as the Euclidean loss plus all of the weight
     # decay terms (L2 loss).
@@ -125,24 +129,31 @@ def loss(heatmaps_stage0, heatmaps_stage1, labels):
 # In[3]:
 
 # DIRECTORY = '/Users/xuehan.xiong/Google Drive/datasets/human_pose'
-# TFRECORD_FILE = os.path.join(DIRECTORY, 'pose_small.tfrecords')
+# TFRECORD_FILE = os.path.join(DIRECTORY, 'MPI_train.tfrecords')
 
 # file_path = os.path.join(DIRECTORY,TFRECORD_FILE)
 # images,labels = pose_input.distorted_inputs([file_path],32,1000)
-# heatmaps0,heatmaps1 = inference(images,0.0)
-# heatmap_loss = loss(heatmaps0, heatmaps1, labels)
+# heatmaps0 = inference(images,1.0E-5)
+# heatmap_loss = loss(heatmaps0, labels)
 # init = tf.initialize_all_variables()
 
 # sess = tf.InteractiveSession()
 # sess.run(init)
 # # Start the queue runners.
 # tf.train.start_queue_runners(sess=sess)
-# loss_val = sess.run(heatmap_loss)
+
 
 
 # In[4]:
 
+# loss_val = sess.run(heatmap_loss)
 # print loss_val
+# heatmaps_val = sess.run(heatmaps0)
+# print np.amax(heatmaps_val[0,:,:,0])
+# print np.amin(heatmaps_val[0,:,:,0])
+# print heatmaps_val.shape
+# plt.imshow(heatmaps_val[0,:,:,0])
+# plt.show()
 
 
 # In[ ]:
