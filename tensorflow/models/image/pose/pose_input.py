@@ -29,7 +29,7 @@ SIGMA = 7.0
 #                           """Sigma for joint heatmap.""")
 
 
-# In[33]:
+# In[3]:
 
 # joint configuration
 RIGHT_ANKLE=0
@@ -241,7 +241,7 @@ def distorted_inputs(filenames,batch_size,total_inputs):
     # Randomly flip the image horizontally.
     distorted_image_label = tf.image.random_flip_left_right(distorted_image_label)
     distorted_image = tf.slice(distorted_image_label,[0,0,0],[IMAGE_SIZE,IMAGE_SIZE,3])
-#     distorted_image = distorted_image * (1. / 255) - 0.5
+    distorted_image = distorted_image * (1. / 255) - 0.5
     distorted_label = tf.slice(distorted_image_label,[0,0,3],[IMAGE_SIZE,IMAGE_SIZE,NUM_HEATMAPS*2])
     
     # Ensure that the random shuffling has good mixing properties.
@@ -300,20 +300,20 @@ def plot_pose(joints):
     
 def blend_heatmap_with_image(heatmaps,image,alpha=0.5):
     image_float = image.astype(np.float32)
-    image_float_half = image_float*0.5
-    foreground = alpha*(1.0-heatmaps[:,:,NUM_COMMON_JOINTS])
-    image_float[:,:,0] = image_float[:,:,0] * foreground
-    image_float[:,:,1] = image_float[:,:,1] * foreground
-    image_float[:,:,2] = image_float[:,:,2] * foreground
-    image_float += (1.0-alpha)*image_float_half
-    output = image_float.astype(np.uint8)
+    image_float_half = image_float*(1.0-alpha)
+    for i in xrange(NUM_COMMON_JOINTS):
+        mapi = alpha*heatmaps[:,:,i]*image_float
+        image_float_half += mapi
+#     image_float[:,:,1] = image_float[:,:,1] * foreground
+#     image_float[:,:,2] = image_float[:,:,2] * foreground
+    output = image_float_half.astype(np.uint8)
     return output
 
 
-# In[34]:
+# In[4]:
 
 # DIRECTORY = '/Users/xuehan.xiong/Google Drive/datasets/human_pose'
-# TFRECORD_FILE = os.path.join(DIRECTORY, 'MPI_train.tfrecords')
+# TFRECORD_FILE = os.path.join(DIRECTORY, 'MPI_test.tfrecords')
 
 # file_path = os.path.join(DIRECTORY,TFRECORD_FILE)
 # images,heatmaps = distorted_inputs([file_path],32,1000)
@@ -325,23 +325,22 @@ def blend_heatmap_with_image(heatmaps,image,alpha=0.5):
 # tf.train.start_queue_runners(sess=sess)
 
 
-# In[35]:
+# In[5]:
 
 # images_val,heatmaps_val = sess.run([images,heatmaps])
 
 
-# In[65]:
+# In[24]:
 
-# index = 28
-# rgb = cv2.cvtColor(images_val[index,:,:,:], cv2.COLOR_BGR2RGB)
-# heatmap_self = heatmaps_val[index,:,:,13]
-# heatmap_all  = heatmaps_val[index,:,:,28]
-# plt.subplot(131)
-# plt.imshow(np.uint8(rgb))
-# plt.subplot(132)
-# plt.imshow(heatmap_self)
-# plt.subplot(133)
-# plt.imshow(heatmap_all)
+# print heatmaps_val[1,:,:,13]
+# plt.imshow(heatmaps_val[1,:,:,13],cmap='jet')
+# print np.amax(heatmaps_val[1,:,:,13])
+# index = 21
+# gray_image = cv2.cvtColor(images_val[index,:,:,:], cv2.COLOR_BGR2GRAY)
+# print heatmaps_val.shape
+# print gray_image.shape
+# gray_blend = blend_heatmap_with_image(heatmaps_val[index,:,:,:],gray_image)
+# plt.imshow(gray_blend,cmap='gray')
 # plt.show()
 
 
