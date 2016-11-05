@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[25]:
+# In[1]:
 
 import tensorflow as tf
 import os
@@ -12,12 +12,13 @@ import cv2
 # import matplotlib.pyplot as plt
 
 
-# In[26]:
+# In[2]:
 
 SCALE_MIN = 0.7
 SCALE_MAX = 1.3
 SCALE_ABS = 1.171
 SIGMA = 7.0
+SIGMA_CENTER = 21.0
 
 # tf.app.flags.DEFINE_float('scale_min', 0.7,
 #                           """Maximum downscale perturbation.""")
@@ -29,7 +30,7 @@ SIGMA = 7.0
 #                           """Sigma for joint heatmap.""")
 
 
-# In[27]:
+# In[11]:
 
 # joint configuration
 RIGHT_ANKLE=0
@@ -53,6 +54,7 @@ NUM_MPI_JOINTS = 16
 NUM_COMMON_JOINTS = 14
 NUM_HEATMAPS = NUM_COMMON_JOINTS+1
 NORMALIZER = 1.0/(2*SIGMA*SIGMA)
+NORMALIZER_CENTER = 1.0/(2*SIGMA_CENTER*SIGMA_CENTER)
 TRANSLATION_PERTURB = 10
 IMAGE_SIZE_WITH_PADDING = IMAGE_SIZE + 2*TRANSLATION_PERTURB
 
@@ -103,10 +105,10 @@ def _random_resize(image,joints,center,scale):
                                             [new_height, new_width])
     return resized_image,resized_joints,resized_center
 
-def _add_invisible_joint_heatmap(heatmap, joint):
+def _add_invisible_joint_heatmap(heatmap, joint, normalizer):
     return heatmap
 
-def _add_visible_joint_heatmap(heatmap, joint):
+def _add_visible_joint_heatmap(heatmap, joint, normalizer):
     height = tf.shape(heatmap)[0]
     width  = tf.shape(heatmap)[1]
     ones = tf.ones_like(heatmap)
@@ -118,7 +120,7 @@ def _add_visible_joint_heatmap(heatmap, joint):
     X,Y = tf.meshgrid(x_range,y_range)
     X = tf.to_float(X)
     Y = tf.to_float(Y)
-    D = (tf.square(joint_x-X)+tf.square(joint_y-Y))*NORMALIZER
+    D = (tf.square(joint_x-X)+tf.square(joint_y-Y))*normalizer
     threshold_mask = tf.cast(D < 4.6052,tf.float32)
     D = tf.mul(tf.exp(-D),threshold_mask)
     D = D + heatmap
@@ -128,9 +130,18 @@ def _add_visible_joint_heatmap(heatmap, joint):
 def _add_joint_heatmap(heatmap, joint, vis):
     # the joints is outside image if vis < 0
     return tf.cond(vis >= 0.0,
-                   lambda: _add_visible_joint_heatmap(heatmap, joint),
-                   lambda: _add_invisible_joint_heatmap(heatmap, joint))
-    
+                   lambda: _add_visible_joint_heatmap(heatmap, joint, NORMALIZER),
+                   lambda: _add_invisible_joint_heatmap(heatmap, joint, NORMALIZER))
+
+def _add_center_map(image):
+    centermap = tf.zeros([IMAGE_SIZE,IMAGE_SIZE])
+    center = tf.constant([IMAGE_SIZE,IMAGE_SIZE],dtype=tf.float32)
+    center = (center-1)*0.5
+    centermap = _add_visible_joint_heatmap(centermap, center, NORMALIZER_CENTER)
+    centermap = tf.expand_dims(centermap,2)
+    image = tf.concat(2,[image,centermap])
+    return image
+
 def _background_heatmap(joint_heatmaps):
     heatmap_sum = tf.reduce_sum(joint_heatmaps,reduction_indices=2)
     ones = tf.ones_like(heatmap_sum)
@@ -183,7 +194,7 @@ def generate_heatmaps(height,width,joints,joints_vis,nop):
     all_heatmaps = all_heatmaps[1]
     self_heatmaps = _add_background_heatmap(self_heatmaps)
     all_heatmaps = _add_background_heatmap(all_heatmaps)
-    all_heatmaps = tf.concat(2,[self_heatmaps,all_heatmaps])
+    all_heatmaps = tf.concat(2,[all_heatmaps,self_heatmaps])
     return all_heatmaps
 
 def _crop_pad(image, center, joints, size):
@@ -242,6 +253,7 @@ def distorted_inputs(filenames,batch_size,total_inputs):
     distorted_image_label = tf.image.random_flip_left_right(distorted_image_label)
     distorted_image = tf.slice(distorted_image_label,[0,0,0],[IMAGE_SIZE,IMAGE_SIZE,3])
     distorted_image = distorted_image * (1. / 255) - 0.5
+    distorted_image = _add_center_map(distorted_image)
     distorted_label = tf.slice(distorted_image_label,[0,0,3],[IMAGE_SIZE,IMAGE_SIZE,NUM_HEATMAPS*2])
     
     # Ensure that the random shuffling has good mixing properties.
@@ -253,8 +265,8 @@ def distorted_inputs(filenames,batch_size,total_inputs):
 
     # Generate a batch of images and labels by building up a queue of examples.
     return _generate_image_and_label_batch(distorted_image, distorted_label,
-                                            min_queue_examples, batch_size,
-                                            shuffle=True)
+                                           min_queue_examples, batch_size,
+                                           shuffle=True)
     
 def _generate_image_and_label_batch(image, label, min_queue_examples,
                                     batch_size, shuffle):
@@ -289,7 +301,6 @@ def _generate_image_and_label_batch(image, label, min_queue_examples,
 
     return images, labels
     
-
 def plot_pose(joints):
     nop = joints.shape[0]
     for i in xrange(nop):
@@ -310,7 +321,7 @@ def blend_heatmap_with_image(heatmaps,image,alpha=0.5):
     return output
 
 
-# In[28]:
+# In[12]:
 
 # DIRECTORY = '/Users/xuehan.xiong/Google Drive/datasets/human_pose'
 # TFRECORD_FILE = os.path.join(DIRECTORY, 'MPI_test.tfrecords')
@@ -325,22 +336,25 @@ def blend_heatmap_with_image(heatmaps,image,alpha=0.5):
 # tf.train.start_queue_runners(sess=sess)
 
 
-# In[29]:
+# In[13]:
 
 # images_val,heatmaps_val = sess.run([images,heatmaps])
 
 
-# In[44]:
+# In[19]:
 
-# print heatmaps_val[1,:,:,13]
+# plt.imshow(images_val[0,:,:,3],cmap='gray')
+# plt.show()
 # plt.imshow(heatmaps_val[1,:,:,13],cmap='jet')
 # print np.amax(heatmaps_val[1,:,:,13])
-# index = 11
+# index = 28
 # gray_image = cv2.cvtColor(images_val[index,:,:,:], cv2.COLOR_BGR2GRAY)
-# #gray_blend = blend_heatmap_with_image(heatmaps_val[index,:,:,:],gray_image)
-# plt.subplot(121)
+# gray_blend = blend_heatmap_with_image(heatmaps_val[index,:,:,:],gray_image)
+# plt.subplot(131)
 # plt.imshow(gray_image,cmap='gray')
-# plt.subplot(122)
+# plt.subplot(132)
+# plt.imshow(heatmaps_val[index,:,:,14],cmap='jet')
+# plt.subplot(133)
 # plt.imshow(heatmaps_val[index,:,:,29],cmap='jet')
 # plt.show()
 
