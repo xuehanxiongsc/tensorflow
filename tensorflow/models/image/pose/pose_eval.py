@@ -11,10 +11,8 @@ import time
 import numpy as np
 import pose_input
 import pose_model
+import cv2
 slim = tf.contrib.slim
-get_ipython().magic(u'matplotlib inline')
-
-import matplotlib.pyplot as plt
 
 
 # In[2]:
@@ -36,45 +34,29 @@ NUM_EVAL=int(math.ceil(float(NUM_TEST_SAMPLES)/float(FLAGS.batch_size)))
 num_heatmaps = pose_input.NUM_HEATMAPS
 
 
-# In[3]:
-
+# In[5]:
 
 with tf.Graph().as_default():
     images, labels = pose_input.distorted_inputs(
             [FLAGS.tfrecord_path],
             FLAGS.batch_size,
             NUM_TEST_SAMPLES)
-    heatmaps0,heatmaps1 = pose_model.inference(images,0.0)
+    heatmaps = pose_model.inference(images,0.0)
+    heatmaps = tf.sigmoid(heatmaps)
     labels0,labels1 = tf.split(3, 2, labels)
     resized_labels = tf.image.resize_images(labels1,
                                             [pose_model.LABEL_SIZE,pose_model.LABEL_SIZE])
-    saver = tf.train.Saver()
-    sess = tf.Session()
     
-    model_checkpoint_path = os.path.join(FLAGS.checkpoint_dir,'model.ckpt-4500')
-    saver.restore(sess, model_checkpoint_path)
-    tf.train.start_queue_runners(sess=sess)
-    images_val,heatmaps0_val,heatmaps1_val = sess.run([images,heatmaps0,heatmaps1])
-    plt.subplot(131)
-    plt.imshow(images_val[0,:,:,0],cmap='gray')
-    plt.subplot(132)
-    plt.imshow(heatmaps0_val[0,:,:,13])
-    plt.subplot(133)
-    plt.imshow(heatmaps1_val[0,:,:,13])
-    plt.show()
-
-
-# In[26]:
-
-index = 12
-print images_val[index,:,:,0]
-plt.subplot(131)
-plt.imshow(images_val[index,:,:,0],cmap='gray')
-plt.subplot(132)
-plt.imshow(heatmaps0_val[index,:,:,13])
-plt.subplot(133)
-plt.imshow(heatmaps1_val[index,:,:,13])
-plt.show()
+    mean_iou,update_op = 
+        slim.metrics.streaming_mean_squared_error(labels1,resized_labels)    
+    iou = slim.evaluation.evaluation_loop(
+        '',
+        FLAGS.checkpoint_dir,
+        FLAGS.log_dir,
+        num_evals=NUM_EVAL,
+        eval_op=update_op,
+        final_op=mean_iou,
+        eval_interval_secs=FLAGS.eval_interval_secs)
 
 
 # In[6]:
