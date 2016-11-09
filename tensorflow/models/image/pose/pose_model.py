@@ -17,7 +17,7 @@ slim = tf.contrib.slim
 # In[2]:
 
 LABEL_SIZE = 46
-NUM_STAGES = 2
+NUM_STAGES = 3
 
 batch_norm_params = {
     # Decay for the moving averages.
@@ -76,6 +76,7 @@ def inference(images,weight_decay):
         net0 = slim.conv2d(net0, pose_input.NUM_HEATMAPS, [1, 1], 
                            activation_fn=None,
                            scope='fc1_stage0')
+        net0_sigmoid = tf.sigmoid(net0)
         # stage 1
         net1 = slim.conv2d(images, 16, [3, 3], scope='conv0_stage1')
         net1 = slim.conv2d(net1, 16, [3, 3], scope='conv1_stage1')
@@ -95,7 +96,7 @@ def inference(images,weight_decay):
         net1 = slim.conv2d(net1, 128, [3, 3], scope='conv9_stage1')
         net1_conv10 = slim.conv2d(net1, 32, [3, 3], scope='conv10_stage1')
         
-        net1 = tf.concat(3,[net1_conv10,net0,resized_centermap])
+        net1 = tf.concat(3,[net1_conv10,net0_sigmoid,resized_centermap])
         net1 = slim.conv2d(net1, 128, [3, 3], scope='conv11_stage1')
         net1 = slim.conv2d(net1, 128, [3, 3], scope='conv12_stage1')
         net1 = slim.conv2d(net1, 128, [3, 3], rate=2, scope='conv13_stage1')
@@ -105,8 +106,20 @@ def inference(images,weight_decay):
         net1 = slim.conv2d(net1, pose_input.NUM_HEATMAPS, [1, 1], 
                            activation_fn=None,
                            scope='fc1_stage1')
+        net1_sigmoid = tf.sigmoid(net1)
+        # stage 2
+        net2 = tf.concat(3,[net1_conv10,net1_sigmoid,resized_centermap])
+        net2 = slim.conv2d(net2, 128, [3, 3], scope='conv11_stage2')
+        net2 = slim.conv2d(net2, 128, [3, 3], scope='conv12_stage2')
+        net2 = slim.conv2d(net2, 128, [3, 3], rate=2, scope='conv13_stage2')
+        net2 = slim.conv2d(net2, 128, [3, 3], rate=4, scope='conv14_stage2')
+        net2 = slim.conv2d(net2, 128, [3, 3], rate=8, scope='conv15_stage2')
+        net2 = slim.conv2d(net2, 128, [1, 1], scope='fc0_stage2')
+        net2 = slim.conv2d(net2, pose_input.NUM_HEATMAPS, [1, 1], 
+                           activation_fn=None,
+                           scope='fc1_stage2')
         # concatenate outputs
-        output = tf.concat(3,[net0,net1])
+        output = tf.concat(3,[net0,net1,net2])
     return output
 
 def loss(heatmaps, labels):
@@ -119,20 +132,20 @@ def loss(heatmaps, labels):
         Loss tensor of type float.
     """
     resized_labels = tf.image.resize_images(labels,[LABEL_SIZE,LABEL_SIZE])
-    # labels_self contain heatmaps that only include self joints
-    # They are used for contextual stages of training
-    # labels_all contain heatmaps that include other people's joints
-    # They are used for training local detectors
     labels_all,labels_self = tf.split(3, 2, resized_labels)
-    heatmap_all,heatmap_self = tf.split(3, NUM_STAGES, heatmaps)
+    heatmap0,heatmap1,heatmap2 = tf.split(3, NUM_STAGES, heatmaps)
     # stage 0 loss
-    loss0_tensor = tf.nn.sigmoid_cross_entropy_with_logits(heatmap_all,labels_all)
+    loss0_tensor = tf.nn.sigmoid_cross_entropy_with_logits(heatmap0,labels_all)
     loss0 = tf.reduce_mean(loss0_tensor)
     tf.contrib.losses.add_loss(loss0)
     # stage 1 loss
-    loss1_tensor = tf.nn.sigmoid_cross_entropy_with_logits(heatmap_self,labels_self)
+    loss1_tensor = tf.nn.sigmoid_cross_entropy_with_logits(heatmap1,labels_self)
     loss1 = tf.reduce_mean(loss1_tensor)
     tf.contrib.losses.add_loss(loss1)
+    # stage 2 loss
+    loss2_tensor = tf.nn.sigmoid_cross_entropy_with_logits(heatmap2,labels_self)
+    loss2 = tf.reduce_mean(loss2_tensor)
+    tf.contrib.losses.add_loss(loss2)
     # The total loss is defined as the Euclidean loss plus all of the weight
     # decay terms (L2 loss).
     return slim.losses.get_total_loss()
@@ -156,10 +169,10 @@ def loss(heatmaps, labels):
 
 
 
-# In[8]:
+# In[5]:
 
-# loss_val = sess.run(heatmap_loss)
-# print loss_val
+# loss_val = sess.run(heatmaps)
+# print loss_val.shape
 # images_val,labels_val = sess.run([images,labels])
 # print np.amax(labels_val[0,:,:,0])
 # print np.amin(labels_val[0,:,:,0])

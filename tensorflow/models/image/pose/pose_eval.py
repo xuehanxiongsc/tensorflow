@@ -43,12 +43,12 @@ with tf.Graph().as_default():
             NUM_TEST_SAMPLES)
     heatmaps = pose_model.inference(images,0.0)
     heatmaps = tf.sigmoid(heatmaps)
-    labels0,labels1 = tf.split(3, 2, labels)
+    heatmaps0,heatmaps1 = tf.split(3,2,heatmaps)
+    labels0,labels1 = tf.split(3,2,labels)
     resized_labels = tf.image.resize_images(labels1,
                                             [pose_model.LABEL_SIZE,pose_model.LABEL_SIZE])
     
-    mean_iou,update_op = 
-        slim.metrics.streaming_mean_squared_error(labels1,resized_labels)    
+    mean_iou,update_op = slim.metrics.streaming_mean_squared_error(heatmaps1,resized_labels)    
     iou = slim.evaluation.evaluation_loop(
         '',
         FLAGS.checkpoint_dir,
